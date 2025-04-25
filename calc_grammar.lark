@@ -1,18 +1,59 @@
-function : "fn" _ws string _ws "{" statement* "}" "\n"
+function : "fn" _ws identifier _ws "(" param_list? ")" _ws "{" statement* "}" "\n"
+param_list : param ("," _ws param)*
+param : identifier _ws ":" _ws type
+type : "i32" | "f64" | "bool" | "String" | "char" | "()" | "[" type "]"
+
 statement : let
           | loop
           | if_stmt
           | while_stmt
           | match_stmt
+          | return_stmt
           | expr _ws ";" _ws
-let : _ws "let" _ws string _ws "=" _ws expr _ws ";" _ws
+
+let : _ws "let" _ws identifier _ws (":" _ws type)? _ws "=" _ws expr _ws ";" _ws
 loop : _ws "loop" _ws "{" _ws statement* _ws "}" _ws
-if_stmt : _ws "if" _ws expr _ws "{" _ws statement* _ws "}" _ws
+if_stmt : _ws "if" _ws expr _ws "{" _ws statement* _ws "}" (_ws "else" _ws "{" _ws statement* _ws "}")? _ws
 while_stmt : _ws "while" _ws expr _ws "{" _ws statement* _ws "}" _ws
-match_stmt : _ws "match" _ws expr _ws "{" _ws statement*  _ws "}" _ws
-expr : term (("+" | "-") expr)?
-term : factor (("*" | "/") term)?
-factor : number | "(" expr ")"
+match_stmt : _ws "match" _ws expr _ws "{" _ws match_arm* _ws "}" _ws
+match_arm : expr _ws "=>" _ws statement _ws ","
+
+return_stmt : _ws "return" _ws expr? _ws ";" _ws
+
+// 四則演算の優先順位を明確化
+expr : expr _ws "||" _ws and_expr   -> or_expr
+     | and_expr
+
+and_expr : and_expr _ws "&&" _ws equality_expr -> and_expr
+         | equality_expr
+
+equality_expr : equality_expr _ws ("==" | "!=") _ws relational_expr -> equality_expr
+              | relational_expr
+
+relational_expr : relational_expr _ws ("<" | ">" | "<=" | ">=") _ws add_expr -> relational_expr
+                | add_expr
+
+add_expr : add_expr _ws ("+" | "-") _ws mul_expr -> add_expr
+         | mul_expr
+
+mul_expr : mul_expr _ws ("*" | "/" | "%") _ws unary_expr -> mul_expr
+         | unary_expr
+
+unary_expr : ("+" | "-" | "!") _ws unary_expr -> unary_expr
+           | factor
+
+factor : _ws number _ws 
+       | _ws string _ws 
+       | _ws identifier _ws
+       | _ws boolean _ws
+       | _ws "(" _ws expr _ws ")" _ws  // 括弧を含む式をサポート
+       | _ws function_call _ws
+
+function_call : string _ws "(" arg_list? ")"
+arg_list : expr ("," _ws expr)*
+
+boolean : "true" | "false"
 number : /[0-9]+/
-string : /[A-Za-z]+/
-_ws : (" " | "\n")*
+identifier : /[A-Za-z_][A-Za-z0-9_]*/
+string : /"[^"]*"/
+_ws : (" " | "\n" | "\r" | "\t")*
