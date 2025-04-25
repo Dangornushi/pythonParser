@@ -5,14 +5,27 @@ statement : let
           | while_stmt
           | match_stmt
           | expr _ws ";" _ws
-let : _ws "let" _ws string _ws "=" _ws expr _ws ";" _ws
+let : _ws "let" _ws string _ws "=" _ws condition ";" _ws
 loop : _ws "loop" _ws "{" _ws statement* _ws "}" _ws
-if_stmt : _ws "if" _ws expr _ws "{" _ws statement* _ws "}" _ws
-while_stmt : _ws "while" _ws expr _ws "{" _ws statement* _ws "}" _ws
+if_stmt : _ws "if" _ws condition _ws "{" _ws statement* _ws "}" _ws
+while_stmt : _ws "while" _ws condition _ws "{" _ws statement* _ws "}" _ws
 match_stmt : _ws "match" _ws expr _ws "{" _ws statement*  _ws "}" _ws
+condition : expr (cond_greater|cond_less|cond_eq|cond_noteq|cond_greater_eq|cond_less_eq|cond_and|cond_or)* _ws
+cond_greater: _ws ">" _ws expr
+cond_less: _ws "<" _ws expr
+cond_eq: _ws "==" _ws expr
+cond_noteq: _ws "!=" _ws expr
+cond_greater_eq: _ws ">=" _ws expr
+cond_less_eq: _ws "<=" _ws expr
+cond_and: _ws "&&" _ws expr
+cond_or: _ws "||" _ws expr
 expr : term (("+" | "-") expr)?
 term : factor (("*" | "/") term)?
-factor : number | "(" expr ")"
+factor : identifier | "(" condition ")"
+identifier : number
+          | call_function
+          | string
+call_function : string "(" ")"
 number : /[0-9]+/
 string : /[A-Za-z]+/
 _ws : (" " | "\n")*
