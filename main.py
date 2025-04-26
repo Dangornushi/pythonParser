@@ -53,7 +53,9 @@ try:
     tree = parser.parse(text)
     result = CalcTransformer().transform(tree)
     eval = Eval(result)
-    eval.evaluate()
+    r = eval.evaluate()
+    print(f"評価結果: {r}")
+
 except UnexpectedInput as e:
     print(f"エラー位置: {e.line}:{e.column}")  # 行と列
     print(f"エラー周辺のテキスト:\n{e.get_context(text)}")  # エラー周辺のテキスト
