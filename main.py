@@ -6,6 +6,8 @@ from memory import Memory
 from node import Node
 from calc_transformer import CalcTransformer
 from eval import Eval
+from interpreter import Interpreter
+from grammar_loader import load_grammar
 
 def printNode(node, callCount=0):
     callCount += 1
@@ -40,22 +42,30 @@ def printNode(node, callCount=0):
 
 args = sys.argv
 
-try:
-    grammar = open("./calc_grammar.lark", encoding="utf-8")
-    parser = Lark(grammar.read(), start="function", parser="lalr")
-except GrammarError as e:
-    print("文法定義にエラーがあります:", e)
-    sys.exit(1)  # エラーが致命的な場合はプログラムを終了
-
+parser = load_grammar("./calc_grammar.lark", "top_level")
 text = open("./test.rs", encoding="utf-8", mode="r").read()
+
 
 try:
     tree = parser.parse(text)
     result = CalcTransformer().transform(tree)
-    eval = Eval(result)
-    r = eval.evaluate()
-    print(f"評価結果: {r}")
 
 except UnexpectedInput as e:
     print(f"エラー位置: {e.line}:{e.column}")  # 行と列
     print(f"エラー周辺のテキスト:\n{e.get_context(text)}")  # エラー周辺のテキスト
+    exit(1)
+
+
+# 型検査
+eval = Eval(result)
+
+# match eval.evaluate():
+
+print("型解析無効モード")
+match True:
+    case False:
+        print("The result is a string.")
+    case _:
+        # 実行
+        interpreter = Interpreter(result)
+        interpreter.execute()

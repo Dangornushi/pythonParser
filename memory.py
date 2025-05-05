@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-# HAshmap <Type, Vec<Varname>>
 @dataclass
 class Memory:
     def __init__(self):

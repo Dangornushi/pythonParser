@@ -1,7 +1,16 @@
-function : "fn" _ws identifier _ws "(" param_list? ")" _ws "{" statement* "}" "\n"
+top_level : function*
+function : "fn" _ws identifier _ws "(" param_list? ")" ( _ws "->" _ws annotated_type )? _ws "{" statement* "}" ("\n" | " ")*
 param_list : param ("," _ws param)*
-param : identifier _ws ":" _ws type
-type : "i32" | "f64" | "bool" | "String" | "char" | "()" | "[" type "]"
+param : identifier _ws ":" _ws annotated_type
+annotated_type : primitive_i32 | primitive_f64 | primitive_bool | primitive_string_type | primitive_char | primitive_unit | array_type
+
+primitive_i32 : "i32"
+primitive_f64 : "f64"
+primitive_bool : "bool"
+primitive_string_type : "String"
+primitive_char : "char"
+primitive_unit : "()"
+array_type: "[" annotated_type "]"
 
 statement : let
           | loop
@@ -11,7 +20,7 @@ statement : let
           | return_stmt
           | expr _ws ";" _ws
 
-let : _ws "let" _ws identifier _ws (":" _ws type)? _ws "=" _ws expr _ws ";" _ws
+let : _ws "let" _ws identifier _ws (":" _ws annotated_type)? _ws "=" _ws expr _ws ";" _ws
 loop : _ws "loop" _ws "{" _ws statement* _ws "}" _ws
 if_stmt : _ws "if" _ws expr _ws "{" _ws statement* _ws "}" (_ws "else" _ws "{" _ws statement* _ws "}")? _ws
 while_stmt : _ws "while" _ws expr _ws "{" _ws statement* _ws "}" _ws
@@ -42,18 +51,28 @@ mul_expr : mul_expr _ws ("*" | "/" | "%") _ws unary_expr -> mul_expr
 unary_expr : ("+" | "-" | "!") _ws unary_expr -> unary_expr
            | factor
 
-factor : _ws number _ws 
-       | _ws string _ws 
+factor : _ws number _ws
+       | _ws float _ws
+       | _ws function_call _ws
+       | _ws string _ws
        | _ws identifier _ws
        | _ws boolean _ws
        | _ws "(" _ws expr _ws ")" _ws  // 括弧を含む式をサポート
-       | _ws function_call _ws
 
-function_call : string _ws "(" arg_list? ")"
+function_call : identifier _ws "(" arg_list? ")"
 arg_list : expr ("," _ws expr)*
 
 boolean : "true" | "false"
 number : /[0-9]+/
+float : /[0-9]+\.[0-9]+/
 identifier : /[A-Za-z_][A-Za-z0-9_]*/
 string : /"[^"]*"/
 _ws : (" " | "\n" | "\r" | "\t")*
+
+// コメントの定義
+COMMENT : "//" /[^\n]*/  // 行コメント
+MULTILINE_COMMENT : "/*" /(.|\n)*?/ "*/"  // 複数行コメント
+
+// コメントを無視する
+%ignore COMMENT
+%ignore MULTILINE_COMMENT
