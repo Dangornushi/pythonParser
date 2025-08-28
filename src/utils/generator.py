@@ -63,6 +63,7 @@ class Generator:
 
     # === handlers ===
     def _handle_top_level(self, node):
+        # header comment - keep same for now
         self._add_line("# Generated Rust-like script")
         self._add_line(f"# Generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         self._add_line("")
@@ -80,15 +81,11 @@ class Generator:
         if type_annotation:
             return_type = f" -> {self._generate_node(type_annotation)}"
 
-        self._add_line(f"fn {function_name}(){return_type} {{")
-        self._indent()
-
+        # use emitter to start/end function definition (language-specific)
+        self.emitter.function_def_start(function_name, return_type)
         for stmt in function_body:
             self._generate_node(stmt)
-
-        self._dedent()
-        self._add_line("}")
-        self._add_line("")
+        self.emitter.function_def_end()
         return function_name
 
     def _handle_statement(self, node):
@@ -97,68 +94,62 @@ class Generator:
     def _handle_let(self, node):
         variable_name = self._generate_node(node.get_lhs())
         value = self._generate_node(node.get_rhs())
-        self._add_line(f"let {variable_name} = {value};")
+        self.emitter.let_statement(variable_name, value)
         return variable_name
 
     def _handle_loop(self, node):
         loop_body = node.get_lhs()
-        self._add_line("loop {")
-        self._indent()
+        self.emitter.loop_start()
         for stmt in loop_body:
             self._generate_node(stmt)
-        self._dedent()
-        self._add_line("}")
+        self.emitter.loop_end()
         return "loop"
 
     def _handle_if(self, node):
         condition = self._generate_node(node.get_lhs())
         if_body = node.get_rhs()
-        self._add_line(f"if {condition} {{")
-        self._indent()
+        self.emitter.if_start(condition)
         for stmt in if_body:
             self._generate_node(stmt)
-        self._dedent()
-        self._add_line("}")
+        self.emitter.if_end()
         return "if"
 
     def _handle_while(self, node):
         condition = self._generate_node(node.get_lhs())
         while_body = node.get_rhs()
-        self._add_line(f"while {condition} {{")
-        self._indent()
+        self.emitter.while_start(condition)
         for stmt in while_body:
             self._generate_node(stmt)
-        self._dedent()
-        self._add_line("}")
+        self.emitter.while_end()
         return "while"
 
     def _handle_return(self, node):
         if node.get_lhs():
             return_value = self._generate_node(node.get_lhs())
-            self._add_line(f"return {return_value};")
+            self.emitter.return_statement(return_value)
         else:
-            self._add_line("return;")
+            self.emitter.return_statement(None)
         return "return"
 
     def _handle_add_expr(self, node):
         left = self._generate_node(node.get_lhs())
         right = self._generate_node(node.get_rhs())
-        return f"{left} + {right}"
+        return self.emitter.format_binary(left, "+", right)
 
     def _handle_sub_expr(self, node):
         left = self._generate_node(node.get_lhs())
         right = self._generate_node(node.get_rhs())
-        return f"{left} - {right}"
+        return self.emitter.format_binary(left, "-", right)
 
     def _handle_mul_expr(self, node):
         left = self._generate_node(node.get_lhs())
         right = self._generate_node(node.get_rhs())
-        return f"{left} * {right}"
+        return self.emitter.format_binary(left, "*", right)
 
     def _handle_div_expr(self, node):
         left = self._generate_node(node.get_lhs())
         right = self._generate_node(node.get_rhs())
-        return f"{left} / {right}"
+        return self.emitter.format_binary(left, "/", right)
 
     def _handle_expr(self, node):
         if node.get_rhs():
@@ -177,7 +168,7 @@ class Generator:
         if node.get_rhs():
             for arg in node.get_rhs():
                 args.append(self._generate_node(arg))
-        return f"{function_name}({', '.join(args)})"
+        return self.emitter.format_function_call(function_name, args)
 
     def _handle_arg_list(self, node):
         args = []
