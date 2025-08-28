@@ -1,5 +1,5 @@
 from lark import Transformer
-from node import Node
+from ..ast.node import Node
 
 class CalcTransformer(Transformer):
     def top_level(self, tree):
@@ -71,15 +71,31 @@ class CalcTransformer(Transformer):
         if len(tree) > 1:
             return Node("RELATIONAL_EXPR", tree[0], tree[1])
         return tree[0]
+ 
+    def add_sub_expr(self, tree):
+        return tree[0]
+    
+    def mul_div_expr(self, tree):
+        return tree[0]
 
     def add_expr(self, tree):
         if len(tree) > 1:
             return Node("ADD_EXPR", tree[0], tree[1])
         return tree[0]
 
+    def sub_expr(self, tree):
+        if len(tree) > 1:
+            return Node("SUB_EXPR", tree[0], tree[1])
+        return tree[0]
+
     def mul_expr(self, tree):
         if len(tree) > 1:
             return Node("MUL_EXPR", tree[0], tree[1])
+        return tree[0]
+
+    def div_expr(self, tree):
+        if len(tree) > 1:
+            return Node("DIV_EXPR", tree[0], tree[1])
         return tree[0]
 
     def unary_expr(self, tree):

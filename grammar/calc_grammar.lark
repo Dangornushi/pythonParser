@@ -39,14 +39,16 @@ and_expr : and_expr _ws "&&" _ws equality_expr -> and_expr
 equality_expr : equality_expr _ws ("==" | "!=") _ws relational_expr -> equality_expr
               | relational_expr
 
-relational_expr : relational_expr _ws ("<" | ">" | "<=" | ">=") _ws add_expr -> relational_expr
-                | add_expr
+relational_expr : relational_expr _ws ("<" | ">" | "<=" | ">=") _ws add_sub_expr -> relational_expr
+                | add_sub_expr
 
-add_expr : add_expr _ws ("+" | "-") _ws mul_expr -> add_expr
-         | mul_expr
+add_sub_expr : add_sub_expr _ws "+" _ws mul_div_expr -> add_expr
+             | add_sub_expr _ws "-" _ws mul_div_expr -> sub_expr
+             | mul_div_expr
 
-mul_expr : mul_expr _ws ("*" | "/" | "%") _ws unary_expr -> mul_expr
-         | unary_expr
+mul_div_expr : mul_div_expr _ws "*" _ws unary_expr -> mul_expr
+             | mul_div_expr _ws "/" _ws unary_expr -> div_expr
+             | unary_expr
 
 unary_expr : ("+" | "-" | "!") _ws unary_expr -> unary_expr
            | factor

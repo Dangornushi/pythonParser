@@ -1,4 +1,4 @@
-from node import Node
+from ..ast.node import Node
 
 def printNode(node, callCount=0):
     callCount += 1

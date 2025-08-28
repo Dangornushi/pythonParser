@@ -1,4 +1,4 @@
-from node import Node
+from ..ast.node import Node
 from typing import List, Optional
 from dataclasses import dataclass
 
@@ -55,6 +55,7 @@ class VariableTable:
     def set_variable(self, variable: Variable, function_name: str):
         if function_name not in self.__table:
             self.__table[function_name] = {}  # 新しいスコープを作成
+#        self.__table[function_name].memory[variable.get_name()] = variable
         self.__table[function_name].memory[variable.get_name()] = variable
 
     def get_variable(self, variable_name, function_name: str):
@@ -109,10 +110,6 @@ class Interpreter:
         self.__now_function_type = Types.VOID
         self.__now_function_name = None
 
-    def __del__(self):
-        print("Interpreter deleted")
-        self.__memory.view()
-
     def execute(self, node: Node=None):
         # 引数がない場合はルートノードを使用
         if node is None:
@@ -121,6 +118,7 @@ class Interpreter:
         if node.get_kind() == "TOP_LEVEL":
             for child in node.get_lhs():
                 self.execute(child)
+            return self.__memory
 
         elif node.get_kind() == "FUNCTION":
             # 関数ノードの場合、関数名とその中身を評価
@@ -142,14 +140,21 @@ class Interpreter:
             # 変数定義ノードの場合、変数をメモリに保存
             variable_name = self.execute(node.get_lhs())
             variable_value = self.execute(node.get_rhs())
+                
+            if type(variable_name) == tuple:
+                pass
+            elif type(variable_name) == Variable:
+                variable_name = variable_name.get_name()
 
             if type(variable_value) == tuple:
-                self.__memory.set_variable(Variable(variable_name, variable_value[0], variable_value[1]), self.__now_function_name)
+                variable_value = Variable(variable_name, variable_value[0], variable_value[1])
             elif type(variable_value) == Variable:
                 variable_value.set_name(variable_name)
-                self.__memory.set_variable(variable_value, self.__now_function_name)
+                print(f"変数{variable_value.get_name()}は関数{self.__now_function_name}内で宣言され値は{variable_value.get_value()}、型は{variable_value.get_type()}です")
             else:
                 pass
+            
+            self.__memory.set_variable(variable_value, self.__now_function_name)
 
             return variable_value
 
@@ -203,8 +208,23 @@ class Interpreter:
 
             return Variable(lhs.get_name(), lhs.get_value() + rhs.get_value(), Types.NUM)
 
+        elif node.get_kind() == "SUB_EXPR":
+            lhs = self.execute(node.get_lhs())
+            rhs = self.execute(node.get_rhs())
+
+            return Variable(lhs.get_name(), lhs.get_value() - rhs.get_value(), Types.NUM)
+
         elif node.get_kind() == "MUL_EXPR":
-            print("Evaluating OR expression")
+            lhs = self.execute(node.get_lhs())
+            rhs = self.execute(node.get_rhs())
+
+            return Variable(lhs.get_name(), lhs.get_value() * rhs.get_value(), Types.NUM)
+
+        elif node.get_kind() == "DIV_EXPR":
+            lhs = self.execute(node.get_lhs())
+            rhs = self.execute(node.get_rhs())
+
+            return Variable(lhs.get_name(), lhs.get_value() / rhs.get_value(), Types.NUM)
 
         elif node.get_kind() == "FACTOR":
             return self.execute(node.get_lhs())  # 再帰的に評価
@@ -215,11 +235,25 @@ class Interpreter:
         elif node.get_kind() == "FLOAT":
             return Variable(node.get_lhs(), float(node.get_lhs()), Types.NUM)
 
+        elif node.get_kind() == "ARG_LIST":
+            # 引数リストノードの場合、引数を評価
+            arguments = []
+            for arg in node.get_lhs():
+                r = self.execute(arg)
+                print(r.get_name(), r.get_value(), r.get_type())
+                arguments.append(r)
+            return arguments
+
         elif node.get_kind() == "FUNCTION_CALL":
             # Evaluate function arguments　
             parent = self.__now_function_name
             function_name = self.execute(node.get_lhs())
-            arguments = node.get_rhs()
+            arguments_stack = []
+
+            for i in node.get_rhs():
+                arguments = self.execute(i)
+                print(f"arguments {arguments}")
+                arguments_stack.push(arguments)
             try:
                 self.__now_function_name = function_name
                 body = self.__memory.get_function_block(function_name)

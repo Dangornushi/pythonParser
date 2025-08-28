@@ -2,12 +2,12 @@
 import sys
 from lark import Lark
 from lark.exceptions import UnexpectedInput, GrammarError
-from memory import Memory
-from node import Node
-from calc_transformer import CalcTransformer
-from eval import Eval
-from interpreter import Interpreter
-from grammar_loader import load_grammar
+from src.ast.node import Node
+from src.parser.calc_transformer import CalcTransformer
+from src.interpreter.eval import Eval
+from src.interpreter.interpreter import Interpreter
+from src.parser.grammar_loader import load_grammar
+from src.utils.generator import Generator
 
 def printNode(node, callCount=0):
     callCount += 1
@@ -42,8 +42,8 @@ def printNode(node, callCount=0):
 
 args = sys.argv
 
-parser = load_grammar("./calc_grammar.lark", "top_level")
-text = open("./test.rs", encoding="utf-8", mode="r").read()
+parser = load_grammar("./grammar/calc_grammar.lark", "top_level")
+text = open("./tests/test.rs", encoding="utf-8", mode="r").read()
 
 
 try:
@@ -61,6 +61,11 @@ eval = Eval(result)
 
 # match eval.evaluate():
 
+# スクリプト生成
+print("🔧 Rust風スクリプトを生成しています...")
+generator = Generator()
+generator.generate(result, "generated_script.rs")
+
 print("型解析無効モード")
 match True:
     case False:
@@ -68,4 +73,7 @@ match True:
     case _:
         # 実行
         interpreter = Interpreter(result)
-        interpreter.execute()
+        mem = interpreter.execute()
+        r= mem.get_variable(("x", "identifier"), ("main", "identifier")).get_value()
+        print(r)
+        mem.view()

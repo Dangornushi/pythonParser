@@ -1,5 +1,5 @@
-from node import Node
-from memory import Memory
+from ..ast.node import Node
+from .memory import Memory
 from dataclasses import dataclass
 
 m = {}
@@ -122,18 +122,19 @@ class Eval:
                 return False
 
         elif node.get_kind() == "ADD_EXPR":
-            lhs = self.evaluate(node.get_lhs())[0]
-            lhs_type = m[lhs]
-            rhs_type = m[self.evaluate(node.get_rhs())[0]]
-            # 型チェック
-            if lhs_type == rhs_type:
-                return (lhs, Types.NUM)
-            else:
-                self.type_error(lhs, lhs_type, rhs_type)
-                return False
+            lhs = self.evaluate(node.get_lhs())
+            rhs = self.evaluate(node.get_rhs())
+            return lhs + rhs
+
+        elif node.get_kind() == "SUB_EXPR":
+            lhs = self.evaluate(node.get_lhs())
+            rhs = self.evaluate(node.get_rhs())
+            return lhs - rhs
 
         elif node.get_kind() == "MUL_EXPR":
-            print("Evaluating OR expression")
+            lhs = self.evaluate(node.get_lhs())
+            rhs = self.evaluate(node.get_rhs())
+            return lhs * rhs
 
         elif node.get_kind() == "LET":
             # 変数定義ノードの場合、変数をメモリに保存
